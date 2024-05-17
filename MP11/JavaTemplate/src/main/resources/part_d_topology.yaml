@@ -1,0 +1,99 @@
+name: "part-D"
+
+# TODO
+# Task: implement your topology for part d
+
+# topology configuration
+# this will be passed to the submitter as a map of config options
+config:
+  storm.local.hostname: "localhost"
+  topology.max.task.parallelism: 3
+  # set this to true if you want to see more debug log
+  # set it to false before submitting
+  topology.debug: false
+  # Hint: you can set input file path here
+  # make sure it's "/tmp/data.txt" in your final submission
+  input_file_path:  "/tmp/data.txt"
+
+components:
+  - id: "poolConfig"
+    className: "org.apache.storm.redis.common.config.JedisPoolConfig"
+    constructorArgs:
+      - "localhost"
+      - 6379
+      - 2000
+      - "uiuc_cs498_mp11"
+      - 0
+
+  # TODO
+  # Task: implement the redis store mapper
+  # src/main/java/edu/illinois/storm/TopNStoreMapper.java
+  # redis hash key for part D is "partDTopN"
+  - id: "storeMapper"
+    className: "main.java.edu.illinois.storm.TopNStoreMapper"
+    constructorArgs:
+      - "partDTopN"
+
+spouts:
+  - id: "fileReaderSpout"
+    className: "main.java.edu.illinois.storm.FileReaderSpout"
+    parallelism: 1
+
+bolts:
+  - id: "bolt-0"
+    className: "main.java.edu.illinois.storm.SplitSentenceBolt"
+    parallelism: 1
+
+  - id: "bolt-1"
+    className: "main.java.edu.illinois.storm.NormalizerBolt"
+    parallelism: 1
+
+  - id: "bolt-2"
+    className: "main.java.edu.illinois.storm.WordCountBolt"
+    parallelism: 1
+
+  - id: "bolt-3"
+    className: "main.java.edu.illinois.storm.TopNFinderBolt"
+    parallelism: 1
+    constructorArgs:
+      - 10
+
+  - id: "bolt-4"
+    className: "org.apache.storm.redis.bolt.RedisStoreBolt"
+    constructorArgs:
+      - ref: "poolConfig"
+      - ref: "storeMapper"
+    parallelism: 1
+
+streams:
+  - name: "spout-1 --> bolt-0"
+    from: "fileReaderSpout"
+    to: "bolt-0"
+    grouping:
+      type: SHUFFLE
+
+  - name: "bolt-0 --> bolt-1"
+    from: "bolt-0"
+    to: "bolt-1"
+    grouping:
+      type: SHUFFLE
+
+  - name: "bolt-1 --> bolt-2"
+    from: "bolt-1"
+    to: "bolt-2"
+    grouping:
+      type: FIELDS
+      args: [ "word" ]
+
+  - name: "bolt-2 --> bolt-3"
+    from: "bolt-2"
+    to: "bolt-3"
+    grouping:
+      type: FIELDS
+      args: [ "word" ]
+
+  - name: "bolt-3 --> bolt-4"
+    from: "bolt-3"
+    to: "bolt-4"
+    grouping:
+      type: SHUFFLE

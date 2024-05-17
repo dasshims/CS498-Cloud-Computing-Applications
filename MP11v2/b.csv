@@ -1,4 +1,3 @@
-ticker,date,close_price,avg_close_price,ema_close_price
-AMD,1/15/2021,88.21,92.853004,92.81656214165034
-AMD,1/19/2021,89.45,92.56801,92.52590462841277
-AMD,1/20/2021,88.75,92.166,92.1169228457768
+version https://git-lfs.github.com/spec/v1
+oid sha256:74f39d58cc6b73c16b0fbb0382deff281d29c8dea81379964035d27f723e768d
+size 194
